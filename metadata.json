@@ -1,0 +1,7 @@
+{
+  "name": "PrintMaster Pro - Ordering App",
+  "description": "A high-performance order management system for a printing typography shop specializing in T-shirts, Hoodies, and Caps with multi-step customization and Trello/Email integration.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
