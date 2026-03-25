@@ -3,17 +3,26 @@ import React, { useState, useEffect } from 'react';
 import { Order, OrderStatus, ProductType, OrderSubtype, OrderItem } from '../types';
 import { Button } from './ui/Button';
 import { apiService } from '../services/apiService';
+import { AdminSchoolsPanel } from './AdminSchoolsPanel';
+import { AdminInventoryPanel } from './AdminInventoryPanel';
+import { useTranslation } from 'react-i18next';
 
 type SortField = 'date' | 'customer' | 'status';
 
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  'New': 'Новый',
-  'Processing': 'В работе',
-  'Completed': 'Завершен',
-  'Cancelled': 'Отменен'
-};
+// Status labels are now localized within the component
 
 export const AdminDashboard: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === 'rtl';
+  const [activeTab, setActiveTab] = useState<'orders' | 'schools' | 'inventory'>('orders');
+  
+  const statusLabels: Record<OrderStatus, string> = {
+    'New': t('statuses.New'),
+    'Processing': t('statuses.Processing'),
+    'Completed': t('statuses.Completed'),
+    'Cancelled': t('statuses.Cancelled')
+  };
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState('');
@@ -80,10 +89,10 @@ export const AdminDashboard: React.FC = () => {
       ));
       
       setSelectedOrderIds(new Set());
-      alert(`Обновлено заказов: ${selectedOrderIds.size}`);
+      alert(t('admin.bulk_confirm', { count: selectedOrderIds.size }));
     } catch (error) {
       console.error("Bulk update error:", error);
-      alert("Некоторые заказы не удалось обновить.");
+      alert(t('admin.bulk_error'));
     } finally {
       setIsBulkUpdating(false);
     }
@@ -200,16 +209,25 @@ export const AdminDashboard: React.FC = () => {
     <div className="bg-white rounded-3xl p-8 shadow-2xl border border-gray-100 animate-in fade-in duration-500 relative">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-black text-gray-800">Панель управления</h2>
-          <p className="text-gray-500 text-sm">Управление заказами и статусами</p>
+          <h2 className="text-3xl font-black text-gray-800">{t('admin.title')}</h2>
+          <p className="text-gray-500 text-sm">{t('admin.subtitle')}</p>
         </div>
-        <Button onClick={fetchOrders} variant="outline" size="sm" className="w-full md:w-auto">
-          🔄 Обновить данные
-        </Button>
+        <div className="flex gap-2">
+           <Button onClick={() => setActiveTab('orders')} variant={activeTab === 'orders' ? 'primary' : 'outline'}>{t('admin.tabs.orders')}</Button>
+           <Button onClick={() => setActiveTab('schools')} variant={activeTab === 'schools' ? 'primary' : 'outline'}>{t('admin.tabs.schools')}</Button>
+           <Button onClick={() => setActiveTab('inventory')} variant={activeTab === 'inventory' ? 'primary' : 'outline'}>{t('admin.tabs.inventory')}</Button>
+        </div>
+        {activeTab === 'orders' && (
+          <Button onClick={fetchOrders} variant="outline" size="sm" className="w-full md:w-auto">
+            🔄 {t('admin.refresh')}
+          </Button>
+        )}
       </div>
 
+      {activeTab === 'inventory' ? <AdminInventoryPanel /> : activeTab === 'schools' ? <AdminSchoolsPanel /> : (
+      <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        {(Object.keys(STATUS_LABELS) as OrderStatus[]).map((status) => {
+        {(Object.keys(statusLabels) as OrderStatus[]).map((status) => {
           const unread = getUnreadCount(status);
           return (
             <div 
@@ -221,7 +239,7 @@ export const AdminDashboard: React.FC = () => {
                   : 'bg-white border-gray-100 hover:border-indigo-200'
               }`}
             >
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{STATUS_LABELS[status]}</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{statusLabels[status]}</p>
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-black text-gray-800">{getStatusCount(status)}</span>
                 <span className={`w-3 h-3 rounded-full ${getStatusColor(status).split(' ')[0]}`}></span>
@@ -229,7 +247,7 @@ export const AdminDashboard: React.FC = () => {
               {unread > 0 && (
                 <div className="absolute top-2 right-2 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
-                  <span className="text-[9px] font-bold text-indigo-600 uppercase">{unread} нов.</span>
+                  <span className="text-[9px] font-bold text-indigo-600 uppercase">{unread} {t('common.new_order').toLowerCase().split(' ')[0]}</span>
                 </div>
               )}
             </div>
@@ -239,24 +257,24 @@ export const AdminDashboard: React.FC = () => {
 
       <div className="flex flex-col md:flex-row items-end gap-4 mb-6 bg-gray-50 p-6 rounded-2xl border border-gray-100">
         <div className="flex-1 w-full">
-          <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">Поиск</label>
+          <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">{t('common.category').split('/')[0]} / {t('admin.search_placeholder').split(',')[0]}</label>
           <input 
             type="text" 
-            placeholder="Имя, ID или заметки..."
+            placeholder={t('admin.search_placeholder')}
             className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 ring-indigo-500 text-sm shadow-sm"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
           />
         </div>
         <div className="w-full md:w-64">
-          <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">Фильтр по статусу</label>
+          <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">{t('admin.status_filter')}</label>
           <select 
             className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none cursor-pointer text-sm shadow-sm font-medium"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="all">Все статусы</option>
-            {Object.entries(STATUS_LABELS).map(([key, label]) => (
+            <option value="all">{t('admin.all_statuses')}</option>
+            {Object.entries(statusLabels).map(([key, label]) => (
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
@@ -266,7 +284,7 @@ export const AdminDashboard: React.FC = () => {
             onClick={resetFilters}
             className="text-xs font-bold text-indigo-600 hover:text-indigo-800 px-2 py-3 transition-colors"
           >
-            Очистить
+            {t('admin.clear')}
           </button>
         )}
       </div>
@@ -274,7 +292,7 @@ export const AdminDashboard: React.FC = () => {
       {loading ? (
         <div className="py-20 text-center">
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 font-medium">Синхронизация данных...</p>
+          <p className="text-gray-500 font-medium">{t('order_form.processing')}</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100">
@@ -289,24 +307,26 @@ export const AdminDashboard: React.FC = () => {
                     onChange={() => handleSelectAll(filteredOrders)}
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600" onClick={() => handleSort('date')}>
-                  Дата {sortField === 'date' && (sortOrder === 'desc' ? '↓' : '↑')}
+                <th className={`px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 ${isRtl ? 'text-right' : 'text-left'}`} onClick={() => handleSort('date')}>
+                  {t('admin.status_filter').split(' ')[0]} {sortField === 'date' && (sortOrder === 'desc' ? '↓' : '↑')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600" onClick={() => handleSort('customer')}>
-                  Клиент {sortField === 'customer' && (sortOrder === 'desc' ? '↓' : '↑')}
+                <th className={`px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider ${isRtl ? 'text-right' : 'text-left'}`}>ID</th>
+                <th className={`px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 ${isRtl ? 'text-right' : 'text-left'}`} onClick={() => handleSort('customer')}>
+                  {t('admin.client')} {sortField === 'customer' && (sortOrder === 'desc' ? '↓' : '↑')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Товары</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600" onClick={() => handleSort('status')}>
-                  Статус {sortField === 'status' && (sortOrder === 'desc' ? '↓' : '↑')}
+                <th className={`px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider ${isRtl ? 'text-right' : 'text-left'}`}>
+                  {t('categories.team')}
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Действия</th>
+                <th className={`px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 ${isRtl ? 'text-right' : 'text-left'}`} onClick={() => handleSort('status')}>
+                  {t('admin.status')} {sortField === 'status' && (sortOrder === 'desc' ? '↓' : '↑')}
+                </th>
+                <th className={`px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider ${isRtl ? 'text-left' : 'text-right'}`}>...</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400 italic">Заказы не найдены</td>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400 italic">{t('admin.no_orders')}</td>
                 </tr>
               ) : (
                 filteredOrders.map((order) => (
@@ -330,7 +350,7 @@ export const AdminDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {!order.viewed && (
-                          <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse shadow-sm shadow-indigo-200" title="Не просмотрено"></span>
+                          <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse shadow-sm shadow-indigo-200" title={t('common.new_order')}></span>
                         )}
                         <span className="font-mono text-[10px] font-bold text-indigo-500">
                           {order.orderNumber.split('-')[1]}
@@ -365,7 +385,7 @@ export const AdminDashboard: React.FC = () => {
                         onClick={(e) => e.stopPropagation()} 
                         onChange={(e) => updateOrderData(order.orderNumber, { status: e.target.value as OrderStatus, viewed: true })}
                       >
-                        {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                        {Object.entries(statusLabels).map(([key, label]) => (
                           <option key={key} value={key}>{label}</option>
                         ))}
                       </select>
@@ -379,6 +399,8 @@ export const AdminDashboard: React.FC = () => {
             </tbody>
           </table>
         </div>
+      )}
+      </>
       )}
 
       {/* Floating Bulk Actions Bar */}
@@ -397,21 +419,21 @@ export const AdminDashboard: React.FC = () => {
               disabled={isBulkUpdating}
               className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
             >
-              В работу
+              {statusLabels['Processing']}
             </button>
             <button 
               onClick={() => handleBulkStatusUpdate('Completed')}
               disabled={isBulkUpdating}
               className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
             >
-              Завершить
+              {statusLabels['Completed']}
             </button>
             <button 
               onClick={() => handleBulkStatusUpdate('Cancelled')}
               disabled={isBulkUpdating}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
             >
-              Отменить
+              {statusLabels['Cancelled']}
             </button>
           </div>
 
@@ -429,8 +451,8 @@ export const AdminDashboard: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">Детали заказа {selectedOrder.orderNumber}</h3>
+              <div className={isRtl ? 'text-right' : 'text-left'}>
+                <h3 className="text-xl font-bold text-gray-800">{t('admin.order_details')} {selectedOrder.orderNumber}</h3>
                 <p className="text-sm text-gray-500">{new Date(selectedOrder.createdAt).toLocaleString()}</p>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-gray-600 text-2xl transition-colors">✕</button>
@@ -439,25 +461,25 @@ export const AdminDashboard: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
               <div className="grid md:grid-cols-2 gap-6 bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
                 <div>
-                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Клиент</h4>
+                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">{t('admin.client')}</h4>
                   <p className="font-bold text-gray-800 text-lg">{selectedOrder.customer.name}</p>
                   <p className="text-sm text-gray-600 flex items-center gap-1">✉️ {selectedOrder.customer.email}</p>
                   <p className="text-sm text-gray-600 flex items-center gap-1">📞 {selectedOrder.customer.phone}</p>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Доставка и примечания</h4>
-                  <p className="text-sm text-gray-700"><strong>Адрес:</strong> {selectedOrder.customer.address || 'Не указан'}</p>
-                  <p className="text-sm text-gray-700 mt-1"><strong>От клиента:</strong> {selectedOrder.customer.comments || 'Нет'}</p>
+                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">{t('admin.delivery')}</h4>
+                  <p className="text-sm text-gray-700"><strong>{t('customer.address_label')}:</strong> {selectedOrder.customer.address || '—'}</p>
+                  <p className="text-sm text-gray-700 mt-1"><strong>{t('admin.client')}:</strong> {selectedOrder.customer.comments || '—'}</p>
                 </div>
               </div>
 
               <div className="bg-amber-50 p-6 rounded-2xl border border-amber-200">
-                <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2">📝 Внутренние заметки</h4>
+                <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2">📝 {t('admin.internal_notes')}</h4>
                 <textarea 
                   className="w-full p-4 bg-white border border-amber-200 rounded-xl outline-none focus:ring-2 ring-amber-400 text-sm h-24 resize-none shadow-inner"
                   value={editingNotes}
                   onChange={(e) => setEditingNotes(e.target.value)}
-                  placeholder="Добавьте рабочую заметку..."
+                  placeholder="..."
                 />
                 <div className="mt-2 flex justify-end">
                    <Button 
@@ -467,14 +489,14 @@ export const AdminDashboard: React.FC = () => {
                     onClick={handleSaveNotes}
                     disabled={isSavingNotes || editingNotes === (selectedOrder.internalNotes || '')}
                   >
-                    {isSavingNotes ? 'Сохранение...' : 'Сохранить заметку'}
+                    {isSavingNotes ? t('admin.saving') : t('admin.save_notes')}
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  📦 Состав заказа <span className="text-sm font-normal text-gray-400">({selectedOrder.items.length} поз.)</span>
+                  📦 {t('admin.composition')} <span className="text-sm font-normal text-gray-400">({selectedOrder.items.length})</span>
                 </h4>
                 {selectedOrder.items.map((item, idx) => {
                   const isTeamItem = item.subtype === OrderSubtype.TEAM;
@@ -490,29 +512,29 @@ export const AdminDashboard: React.FC = () => {
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h5 className="text-lg font-bold text-gray-800 leading-tight">
-                                {item.type === ProductType.TSHIRT ? 'Футболка' : item.type === ProductType.HOODIE ? 'Худи' : item.type === ProductType.CAP ? 'Шапка' : 'Майка'} 
-                                <span className="text-indigo-600 ml-1">[{item.subtype}]</span>
+                                {t(`products.${item.type.toLowerCase().replace('-', '_')}`)} 
+                                <span className="text-indigo-600 ml-1">[{t(`categories.${item.subtype.toLowerCase() === 'школа' ? 'school' : item.subtype.toLowerCase() === 'команда' ? 'team' : 'personal'}`)}]</span>
                               </h5>
                               <div className="flex flex-wrap gap-2 mt-2">
                                 <span className="px-2 py-1 bg-gray-100 rounded-md text-[10px] font-bold text-gray-600 uppercase">{item.color}</span>
-                                {item.fabric && <span className="px-2 py-1 bg-amber-100 rounded-md text-[10px] font-bold text-amber-700 uppercase">Ткань: {item.fabric}</span>}
-                                {!isTeamItem && <span className="px-2 py-1 bg-gray-100 rounded-md text-[10px] font-bold text-gray-600 uppercase">Размер: {item.size}</span>}
+                                {item.fabric && <span className="px-2 py-1 bg-amber-100 rounded-md text-[10px] font-bold text-amber-700 uppercase">{t('order_form.fabric_choice')}: {item.fabric}</span>}
+                                {!isTeamItem && <span className="px-2 py-1 bg-gray-100 rounded-md text-[10px] font-bold text-gray-600 uppercase">{t('order_form.sizes').split(' ')[0]}: {item.size}</span>}
                                 <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${isTeamItem ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                                  {isTeamItem ? `Состав: ${playersList.length || item.quantity} чел.` : `Кол-во: ${item.quantity} шт.`}
+                                  {isTeamItem ? `${t('admin.composition')}: ${playersList.length || item.quantity}` : `${t('order.quantity')}: ${item.quantity} ${t('order.pcs')}`}
                                 </span>
                               </div>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-gray-50/50 p-4 rounded-xl border border-gray-100 mb-4">
-                            {item.school && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">Школа</p><p className="text-gray-800 font-medium">{item.school}</p></div>)}
-                            {item.gender && !isTeamItem && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">Пол</p><p className="text-gray-800 font-medium">{item.gender}</p></div>)}
-                            {item.sleeve && !isTeamItem && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">Рукав</p><p className="text-gray-800 font-medium">{item.sleeve}</p></div>)}
-                            {item.hoodieType && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">Тип худи</p><p className="text-gray-800 font-medium">{item.hoodieType}</p></div>)}
-                            {item.capType && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">Модель шапки</p><p className="text-gray-800 font-medium">{item.capType}</p></div>)}
+                            {item.school && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">{t('admin.school')}</p><p className="text-gray-800 font-medium">{item.school}</p></div>)}
+                            {item.gender && !isTeamItem && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">{t('admin.gender')}</p><p className="text-gray-800 font-medium">{item.gender}</p></div>)}
+                            {item.sleeve && !isTeamItem && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">{t('admin.sleeve')}</p><p className="text-gray-800 font-medium">{item.sleeve}</p></div>)}
+                            {item.hoodieType && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">{t('admin.hoodie_type')}</p><p className="text-gray-800 font-medium">{item.hoodieType}</p></div>)}
+                            {item.capType && (<div><p className="text-gray-400 text-xs font-bold uppercase mb-1">{t('admin.cap_model')}</p><p className="text-gray-800 font-medium">{item.capType}</p></div>)}
                             {item.printPlaces && item.printPlaces.length > 0 && (
                                <div className="sm:col-span-2">
-                                 <p className="text-gray-400 text-xs font-bold uppercase mb-1">Места печати</p>
+                                 <p className="text-gray-400 text-xs font-bold uppercase mb-1">{t('admin.print_places')}</p>
                                  <div className="flex flex-wrap gap-1">{item.printPlaces.map(p => (<span key={p} className="bg-white px-2 py-0.5 rounded border border-gray-200 text-xs text-gray-700 font-medium">{p}</span>))}</div>
                                </div>
                             )}
@@ -522,7 +544,7 @@ export const AdminDashboard: React.FC = () => {
                           {item.wishes && (
                             <div className="mb-4 bg-indigo-50/30 p-4 rounded-xl border border-indigo-100">
                               <p className="text-indigo-600 text-[10px] font-black uppercase mb-1 tracking-widest flex items-center gap-2">
-                                <span>💬 Пожелания к товару</span>
+                                <span>💬 {t('admin.wishes')}</span>
                               </p>
                               <p className="text-xs text-gray-700 whitespace-pre-wrap">{item.wishes}</p>
                             </div>
@@ -532,8 +554,8 @@ export const AdminDashboard: React.FC = () => {
                           {isTeamItem && (
                             <div className="mt-6 border-t pt-4 animate-in slide-in-from-top-2 duration-300">
                               <p className="text-indigo-600 text-[10px] font-black uppercase mb-3 tracking-widest flex items-center gap-2">
-                                <span>📋 СПИСОК КОМАНДЫ ДЛЯ ПЕЧАТИ</span>
-                                <span className="bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[9px]">{playersList.length} ИГРОКОВ</span>
+                                <span>📋 {t('admin.roster')}</span>
+                                <span className="bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[9px]">{playersList.length}</span>
                               </p>
                               
                               {playersList.length > 0 ? (
@@ -541,11 +563,11 @@ export const AdminDashboard: React.FC = () => {
                                   <table className="min-w-full divide-y divide-indigo-50">
                                     <thead className="bg-indigo-50/50">
                                       <tr className="text-left text-[9px] font-black text-indigo-400 uppercase">
-                                        <th className="px-3 py-2">Имя</th>
-                                        <th className="px-3 py-2 text-center">Номер</th>
-                                        <th className="px-3 py-2">Пол</th>
-                                        <th className="px-3 py-2 text-center">Размер</th>
-                                        <th className="px-3 py-2">Рукав</th>
+                                        <th className="px-3 py-2">{t('customer.name_label')}</th>
+                                        <th className="px-3 py-2 text-center">#</th>
+                                        <th className="px-3 py-2">{t('admin.gender')}</th>
+                                        <th className="px-3 py-2 text-center">{t('order.size')}</th>
+                                        <th className="px-3 py-2">{t('admin.sleeve')}</th>
                                       </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-50 text-[11px]">
@@ -564,7 +586,7 @@ export const AdminDashboard: React.FC = () => {
                               ) : (
                                 <div className="p-6 bg-red-50 rounded-xl border border-red-100 flex flex-col items-center gap-2 text-center">
                                   <span className="text-2xl">⚠️</span>
-                                  <p className="text-red-600 font-bold text-sm">Данные об игроках отсутствуют!</p>
+                                  <p className="text-red-600 font-bold text-sm">{t('admin.no_roster')}</p>
                                 </div>
                               )}
                             </div>
@@ -574,7 +596,7 @@ export const AdminDashboard: React.FC = () => {
                           {item.printImages && Object.keys(item.printImages).length > 0 && (
                             <div className="mt-6 border-t pt-4">
                               <p className="text-indigo-600 text-[10px] font-black uppercase mb-4 tracking-widest flex items-center gap-2">
-                                <span>🖼️ ЗАГРУЖЕННЫЕ МАКЕТЫ</span>
+                                <span>🖼️ {t('admin.mockups')}</span>
                               </p>
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 {Object.entries(item.printImages).map(([place, imgData]) => {
@@ -593,7 +615,7 @@ export const AdminDashboard: React.FC = () => {
                                         ) : (
                                           <div className="text-center p-2">
                                             <span className="text-xl block mb-1">📵</span>
-                                            <span className="text-[8px] text-gray-400 leading-none block uppercase font-black">Доступно только на сервере</span>
+                                            <span className="text-[8px] text-gray-400 leading-none block uppercase font-black">{t('admin.no_orders')}</span>
                                           </div>
                                         )}
                                       </div>
@@ -602,7 +624,7 @@ export const AdminDashboard: React.FC = () => {
                                           onClick={() => downloadImage(imgData, `Layout_${selectedOrder.orderNumber}_${place}.png`)}
                                           className="w-full py-1.5 bg-indigo-600 text-white text-[9px] font-black uppercase rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                                         >
-                                          Скачать
+                                          {t('admin.download')}
                                         </button>
                                       )}
                                     </div>
@@ -628,17 +650,17 @@ export const AdminDashboard: React.FC = () => {
             </div>
             <div className="p-6 border-t border-gray-100 flex justify-between items-center bg-gray-50">
               <div className="flex gap-2">
-                <Button onClick={() => setSelectedOrder(null)} variant="outline">Закрыть</Button>
-                <Button onClick={() => window.print()} variant="outline" className="hidden sm:inline-flex">🖨️ Печать</Button>
+                <Button onClick={() => setSelectedOrder(null)} variant="outline">{t('admin.close')}</Button>
+                <Button onClick={() => window.print()} variant="outline" className="hidden sm:inline-flex">🖨️ {t('admin.print')}</Button>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-gray-400 uppercase">Статус:</span>
+                <span className="text-xs font-bold text-gray-400 uppercase">{t('admin.status')}:</span>
                 <select 
                   className={`text-sm font-bold rounded-xl px-4 py-2 outline-none border border-gray-200 shadow-sm transition-all focus:ring-2 ring-indigo-500 ${getStatusColor(selectedOrder.status)}`}
                   value={selectedOrder.status}
                   onChange={(e) => updateOrderData(selectedOrder.orderNumber, { status: e.target.value as OrderStatus, viewed: true })}
                 >
-                  {Object.entries(STATUS_LABELS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                  {Object.entries(statusLabels).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
                 </select>
               </div>
             </div>

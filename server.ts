@@ -11,6 +11,23 @@ import { generateOrderPDF } from './services/pdfService';
 import { sendOrderEmail } from './services/emailService';
 import { createTrelloCard } from './services/trelloService';
 import { Order } from './types';
+import multer from 'multer';
+import { getSchools, addSchool, updateSchool, deleteSchool } from './services/schoolService';
+import { getInventory, saveInventory, deductOrderItemsFromInventory, returnOrderItemsToInventory } from './services/inventoryService';
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'public', 'logos');
+    fs.mkdir(uploadDir, { recursive: true }).then(() => {
+      cb(null, uploadDir);
+    }).catch(err => cb(err, uploadDir));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,6 +95,13 @@ async function setupServer() {
       const orderFile = path.join(ORDERS_DIR, `${ts}__${safeOrderNumber || 'order'}.json`);
       await fs.writeFile(orderFile, JSON.stringify(orderData, null, 2), 'utf-8');
 
+      // Deduct inventory
+      try {
+        await deductOrderItemsFromInventory(orderData.items);
+      } catch (e) {
+        console.warn('Inventory deduction failed:', e);
+      }
+
       // 2) Optional side-effects (best-effort; must not fail order creation)
       try {
         const pdfBuffer = await generateOrderPDF(orderData);
@@ -107,14 +131,92 @@ async function setupServer() {
     res.status(200).json(ordersHistory);
   });
 
-  app.patch('/api/orders/:orderNumber', (req, res) => {
+  app.patch('/api/orders/:orderNumber', async (req, res) => {
     const { orderNumber } = req.params;
     const orderIndex = ordersHistory.findIndex(o => o.orderNumber === orderNumber);
     if (orderIndex > -1) {
+      const oldStatus = ordersHistory[orderIndex].status;
+      const newStatus = req.body.status;
+      
       ordersHistory[orderIndex] = { ...ordersHistory[orderIndex], ...req.body };
+
+      // Handle stock return/deduction on cancellation changes
+      if (oldStatus !== 'Cancelled' && newStatus === 'Cancelled') {
+        try { await returnOrderItemsToInventory(ordersHistory[orderIndex].items); } catch (e) { console.error(e); }
+      } else if (oldStatus === 'Cancelled' && newStatus && newStatus !== 'Cancelled') {
+        try { await deductOrderItemsFromInventory(ordersHistory[orderIndex].items); } catch (e) { console.error(e); }
+      }
+
       return res.status(200).json(ordersHistory[orderIndex]);
     }
     res.status(404).json({ message: 'Order not found' });
+  });
+
+  // API: Управление школами (Schools)
+  app.get('/api/schools', async (req, res) => {
+    try {
+      const schools = await getSchools();
+      res.status(200).json(schools);
+    } catch (e) {
+      res.status(500).json({ success: false, message: 'Ошибка при получении школ' });
+    }
+  });
+
+  app.post('/api/schools', async (req, res) => {
+    try {
+      const { id, name, logo } = req.body;
+      let school;
+      if (id) {
+        school = await updateSchool(id, { name, logo });
+      } else {
+        school = await addSchool({ id: Date.now().toString(), name, logo });
+      }
+      res.status(200).json({ success: true, school });
+    } catch (e) {
+      res.status(500).json({ success: false, message: 'Ошибка при сохранении школы' });
+    }
+  });
+
+  app.delete('/api/schools/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await deleteSchool(id);
+      if (success) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(404).json({ success: false, message: 'Школа не найдена' });
+      }
+    } catch (e) {
+      res.status(500).json({ success: false });
+    }
+  });
+
+  app.post('/api/upload-logo', upload.single('logo'), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Файл не загружен' });
+    }
+    const logoUrl = `/logos/${req.file.filename}`;
+    res.status(200).json({ success: true, logoUrl });
+  });
+
+  // API: Управление складом (Inventory)
+  app.get('/api/inventory', async (req, res) => {
+    try {
+      const inventory = await getInventory();
+      res.status(200).json(inventory);
+    } catch (e) {
+      res.status(500).json({ success: false, message: 'Ошибка при получении склада' });
+    }
+  });
+
+  app.post('/api/inventory/bulk', async (req, res) => {
+    try {
+      const inventory = req.body;
+      await saveInventory(inventory);
+      res.status(200).json({ success: true, inventory });
+    } catch (e) {
+      res.status(500).json({ success: false, message: 'Ошибка при сохранении склада' });
+    }
   });
 
   if (process.env.NODE_ENV !== 'production') {

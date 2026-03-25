@@ -72,3 +72,19 @@ export interface Order {
   viewed: boolean;
   internalNotes?: string;
 }
+
+export interface School {
+  id: string;
+  name: string;
+  logo: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  productType: ProductType;
+  color: string;
+  size: string;
+  quantity: number;
+  sleeve?: string;   // Короткий, Длинный, Без рукавов и т.д.
+  fabric?: string;   // 100% хлопок, DryFit и т.д.
+}

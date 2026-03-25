@@ -2,6 +2,7 @@
 import React from 'react';
 import { OrderItem } from '../types';
 import { Button } from './ui/Button';
+import { useTranslation } from 'react-i18next';
 
 interface CartViewProps {
   items: OrderItem[];
@@ -10,6 +11,7 @@ interface CartViewProps {
 }
 
 export const CartView: React.FC<CartViewProps> = ({ items, onRemove, onNext }) => {
+  const { t } = useTranslation();
   if (items.length === 0) return null;
 
   const getItemIcon = (type: string) => {
@@ -25,7 +27,7 @@ export const CartView: React.FC<CartViewProps> = ({ items, onRemove, onNext }) =
   return (
     <div className="mt-12 bg-white rounded-3xl p-8 shadow-2xl border border-gray-100 max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        🛒 Ваша корзина <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">{items.length}</span>
+        🛒 {t('cart.title')} <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">{items.length}</span>
       </h2>
       <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
         {items.map((item) => (
@@ -35,12 +37,12 @@ export const CartView: React.FC<CartViewProps> = ({ items, onRemove, onNext }) =
                 {getItemIcon(item.type)}
               </div>
               <div>
-                <p className="font-bold text-gray-800">{item.subtype} - {item.type === 'TANK_TOP' ? 'Майка' : item.type === 'TSHIRT' ? 'Футболка' : item.type === 'HOODIE' ? 'Худи' : 'Шапка'}</p>
+                <p className="font-bold text-gray-800">{t(`categories.${item.subtype.toLowerCase() === 'школа' ? 'school' : item.subtype.toLowerCase() === 'команда' ? 'team' : 'personal'}`)} - {t(`products.${item.type.toLowerCase().replace('-', '_')}`)}</p>
                 <p className="text-xs text-gray-500 uppercase font-semibold">
                   {item.color} • {item.size} • x{item.quantity} 
                   {item.fabric && ` • ${item.fabric}`}
                   {item.school && ` • ${item.school}`}
-                  {item.players && ` • Команда (${item.players.length} чел.)`}
+                  {item.players && ` • ${t('categories.team')} (${item.players.length})`}
                 </p>
               </div>
             </div>
@@ -55,12 +57,12 @@ export const CartView: React.FC<CartViewProps> = ({ items, onRemove, onNext }) =
       </div>
       <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
         <div>
-          <p className="text-gray-500 text-sm">Общее количество:</p>
+          <p className="text-gray-500 text-sm">{t('cart.total_qty')}:</p>
           <p className="text-xl font-bold text-gray-800">
-            {items.reduce((acc, item) => acc + (item.subtype === 'Команда' ? (item.players?.length || 0) : item.quantity), 0)} шт.
+            {items.reduce((acc, item) => acc + (item.players ? item.players.length : item.quantity), 0)} {t('order.pcs')}
           </p>
         </div>
-        <Button onClick={onNext} variant="primary" size="lg">Оформить заказ →</Button>
+        <Button onClick={onNext} variant="primary" size="lg">{t('cart.checkout_btn')}</Button>
       </div>
     </div>
   );

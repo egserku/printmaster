@@ -111,5 +111,52 @@ export const apiService = {
       if (!updatedOrder) throw new Error("Order not found in local storage.");
       return updatedOrder;
     }
+  },
+
+  getSchools: async (): Promise<any[]> => {
+    try {
+      const response = await axios.get(`${API_URL}/schools`, { timeout: 5000 });
+      return response.data;
+    } catch (e) {
+      console.warn("Failed to fetch schools from server");
+      return [];
+    }
+  },
+  
+  saveSchool: async (school: any): Promise<any> => {
+    const response = await axios.post(`${API_URL}/schools`, school);
+    return response.data.school;
+  },
+
+  deleteSchool: async (id: string): Promise<boolean> => {
+    const response = await axios.delete(`${API_URL}/schools/${id}`);
+    return response.data.success;
+  },
+
+  uploadSchoolLogo: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await axios.post(`${API_URL}/upload-logo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data.logoUrl;
+  },
+
+  getInventory: async (): Promise<any[]> => {
+    try {
+      const response = await axios.get(`${API_URL}/inventory`, { timeout: 5000 });
+      return response.data;
+    } catch(e) {
+      return [];
+    }
+  },
+
+  saveInventoryBulk: async (inventory: any[]): Promise<boolean> => {
+    try {
+      await axios.post(`${API_URL}/inventory/bulk`, inventory);
+      return true;
+    } catch(e) {
+      return false;
+    }
   }
 };
