@@ -14,6 +14,7 @@ import { getDesignFeedback } from '../services/geminiService';
 import { apiService } from '../services/apiService';
 import { School, InventoryItem } from '../types';
 import { useTranslation } from 'react-i18next';
+import { ImageRadioGroup } from './ui/ImageRadioGroup';
 
 interface OrderFormProps {
   productType: ProductType;
@@ -61,7 +62,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ productType, initialSubtyp
     if (initialSubtype === OrderSubtype.SCHOOL) defaultPrintPlaces = ['Спереди'];
 
     if (productType === ProductType.CAP) {
-        setFormData(prev => ({ ...prev, capType: CapType.BASEBALL, printPlaces: ['Спереди'] }));
+        setFormData(prev => ({ ...prev, capType: CapType.BASEBALL, printPlaces: ['Спереди'], size: 'Universal' }));
     } else if (productType === ProductType.HOODIE) {
         setFormData(prev => ({ ...prev, hoodieType: HoodieType.KANGAROO, printPlaces: defaultPrintPlaces, sleeve: 'Длинный', gender: 'Универсальный' }));
     } else if (productType === ProductType.TANK_TOP) {
@@ -234,42 +235,20 @@ export const OrderForm: React.FC<OrderFormProps> = ({ productType, initialSubtyp
         )}
 
         {(productType === ProductType.HOODIE || productType === ProductType.CAP) && !isTeamMode && (
-          <div className="animate-in slide-in-from-left-4 duration-400">
-            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">{t('order_form.model')} {productType === ProductType.CAP ? t('products.cap').toLowerCase() : t('products.hoodie').toLowerCase()}</label>
-            <div className="flex flex-wrap gap-4">
-              {productType === ProductType.HOODIE ?
-                [
-                  { type: HoodieType.KANGAROO, img: '/assets/ui/hoodie_kangaroo.png', label: 'Кенгуру' },
-                  { type: HoodieType.ZIP, img: '/assets/ui/hoodie_zip.png', label: 'На молнии' },
-                  { type: HoodieType.SWEATER, img: '/assets/ui/hoodie_sweater.png', label: 'Свитшот' }
-                ].map(({ type, img, label }) => (
-                  <button
-                    key={type}
-                    onClick={() => setFormData({ ...formData, hoodieType: type })}
-                    className={`flex flex-col items-center px-3 py-2 rounded-2xl border-2 transition-all ${formData.hoodieType === type ? 'border-indigo-600 bg-indigo-50' : 'border-gray-50 bg-gray-50 text-gray-300 hover:border-gray-200'}`}
-                  >
-                    <img src={img} alt={label} className={`w-16 h-16 object-contain mb-2 ${formData.hoodieType === type ? '' : 'opacity-60'}`} />
-                    <span className={`text-[11px] font-black uppercase ${formData.hoodieType === type ? 'text-indigo-700' : 'text-gray-400'}`}>{label}</span>
-                  </button>
-                ))
-                :
-                [
-                  { type: CapType.BASEBALL, img: '/assets/ui/cap_baseball.png', label: 'Бейсболка' },
-                  { type: CapType.SNAPBACK, img: '/assets/ui/cap_snapback.png', label: 'Снэпбек' },
-                  { type: CapType.BEANIE, img: '/assets/ui/cap_beanie.png', label: 'Бини' }
-                ].map(({ type, img, label }) => (
-                  <button
-                    key={type}
-                    onClick={() => setFormData({ ...formData, capType: type })}
-                    className={`flex flex-col items-center px-3 py-2 rounded-2xl border-2 transition-all ${formData.capType === type ? 'border-indigo-600 bg-indigo-50' : 'border-gray-50 bg-gray-50 text-gray-300 hover:border-gray-200'}`}
-                  >
-                    <img src={img} alt={label} className={`w-16 h-16 object-contain mb-2 ${formData.capType === type ? '' : 'opacity-60'}`} />
-                    <span className={`text-[11px] font-black uppercase ${formData.capType === type ? 'text-indigo-700' : 'text-gray-400'}`}>{label}</span>
-                  </button>
-                ))
-              }
-            </div>
-          </div>
+          <ImageRadioGroup
+            label={`${t('order_form.model')} ${productType === ProductType.CAP ? t('products.cap').toLowerCase() : t('products.hoodie').toLowerCase()}`}
+            value={productType === ProductType.HOODIE ? (formData.hoodieType || '') : (formData.capType || '')}
+            onChange={(val) => setFormData(prev => ({ ...prev, [productType === ProductType.HOODIE ? 'hoodieType' : 'capType']: val }))}
+            options={productType === ProductType.HOODIE ? [
+              { id: HoodieType.KANGAROO, label: t('models.kangaroo'), image: '/assets/ui/hoodie_kangaroo.png' },
+              { id: HoodieType.ZIP, label: t('models.zip'), image: '/assets/ui/hoodie_zip.png' },
+              { id: HoodieType.SWEATER, label: t('models.sweater'), image: '/assets/ui/hoodie_sweater.png' }
+            ] : [
+              { id: CapType.BASEBALL, label: t('models.baseball'), image: '/assets/ui/cap_baseball.png' },
+              { id: CapType.SNAPBACK, label: t('models.snapback'), image: '/assets/ui/cap_snapback.png' },
+              { id: CapType.BEANIE, label: t('models.beanie'), image: '/assets/ui/cap_beanie.png' }
+            ]}
+          />
         )}
 
         {isTeamMode && productType === ProductType.TSHIRT && (
@@ -379,31 +358,42 @@ export const OrderForm: React.FC<OrderFormProps> = ({ productType, initialSubtyp
          productType !== ProductType.HOODIE && 
          !isTeamMode && 
          initialSubtype !== OrderSubtype.PERSONAL && (
-          <div>
-            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">{t('order_form.for_who')}</label>
-            <div className="flex gap-3">
-              {[t('order_form.boys'), t('order_form.girls')].map(g => (
-                <button key={g} onClick={() => setFormData({ ...formData, gender: g as any })} className={`flex-1 h-14 rounded-2xl font-black text-[12px] uppercase border-2 transition-all ${formData.gender === g ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-gray-50 bg-gray-50 text-gray-300'}`}>{g}</button>
-              ))}
-            </div>
-          </div>
+          <ImageRadioGroup
+            label={t('order_form.for_who')}
+            value={formData.gender || ''}
+            onChange={(val) => setFormData(prev => ({ ...prev, gender: val as any }))}
+            options={[
+              { id: 'Мальчик', label: t('order_form.boys'), image: '/assets/ui/gender_boy.png' },
+              { id: 'Девочка', label: t('order_form.girls'), image: '/assets/ui/gender_girl.png' }
+            ]}
+          />
         )}
 
-        {(productType === ProductType.TSHIRT || productType === ProductType.HOODIE || productType === ProductType.CAP) && !isTeamMode && (
-          <div className="animate-in slide-in-from-left-4 duration-400">
-            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">{t('order_form.sleeve_length')}</label>
-            <div className="flex flex-wrap gap-2">
-              {(initialSubtype === OrderSubtype.PERSONAL 
-                ? SLEEVES.BOY 
-                : (formData.gender === 'Девочка' ? SLEEVES.GIRL : SLEEVES.BOY)
-              ).map(s => (
-                <button key={s} onClick={() => setFormData({ ...formData, sleeve: s })} className={`px-6 h-12 rounded-2xl font-black text-[11px] uppercase border-2 transition-all ${formData.sleeve === s ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-gray-50 bg-gray-50 text-gray-300 hover:border-gray-200'}`}>{s}</button>
-              ))}
-            </div>
-          </div>
+        {productType === ProductType.TSHIRT && !isTeamMode && (
+          <ImageRadioGroup
+            label={t('order_form.sleeve_length')}
+            value={formData.sleeve || ''}
+            onChange={(val) => setFormData(prev => ({ ...prev, sleeve: val }))}
+            options={(initialSubtype === OrderSubtype.PERSONAL 
+              ? SLEEVES.BOY 
+              : (formData.gender === 'Девочка' ? SLEEVES.GIRL : SLEEVES.BOY)
+            ).map(s => {
+              let label = t('order_form.short_sleeve');
+              let img = 'short';
+              if (s === 'Длинный') { label = t('order_form.long_sleeve'); img = 'long'; }
+              else if (s === '3/4') { label = t('order_form.sleeve_3_4'); img = '3_4'; }
+              else if (s === 'Без рукавов') { label = t('order_form.no_sleeve'); img = 'none'; }
+              
+              return {
+                id: s,
+                label: label,
+                image: `/assets/ui/sleeve_${img}.png`
+              };
+            })}
+          />
         )}
 
-        {!isTeamMode && (
+        {!isTeamMode && productType !== ProductType.CAP && (
           <div>
             <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">{t('order_form.sizes')} {inventory.length > 0 && <span className="ml-2 text-[9px] text-gray-400 font-normal normal-case opacity-60">{t('order_form.stock_info')}</span>}</label>
             <div className="flex flex-wrap gap-2">

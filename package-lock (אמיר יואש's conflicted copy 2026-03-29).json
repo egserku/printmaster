@@ -26,6 +26,7 @@
         "vite": "^7.3.1"
       },
       "devDependencies": {
+        "@rollup/rollup-win32-x64-msvc": "^4.59.0",
         "@types/express": "^4.17.21",
         "@types/multer": "^2.1.0",
         "@types/node": "^20.10.0",
@@ -80,6 +81,7 @@
       "resolved": "https://registry.npmjs.org/@babel/core/-/core-7.29.0.tgz",
       "integrity": "sha512-CGOfOJqWjg2qW/Mb6zNsDm+u5vFQ8DxXfbM09z69p5Z6+mE1ikP2jUXw+j42Pf1XTYED2Rni5f95npYeuwMDQA==",
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "@babel/code-frame": "^7.29.0",
         "@babel/generator": "^7.29.0",
@@ -1235,8 +1237,8 @@
       "cpu": [
         "x64"
       ],
+      "devOptional": true,
       "license": "MIT",
-      "optional": true,
       "os": [
         "win32"
       ]
@@ -1424,6 +1426,7 @@
       "integrity": "sha512-z9VXpC7MWrhfWipitjNdgCauoMLRdIILQsAEV+ZesIzBq/oUlxk0m3ApZuMFCXdnS4U7KrI+l3WRUEGQ8K1QKw==",
       "dev": true,
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "@types/prop-types": "*",
         "csstype": "^3.2.2"
@@ -1785,6 +1788,7 @@
         }
       ],
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "baseline-browser-mapping": "^2.9.0",
         "caniuse-lite": "^1.0.30001759",
@@ -3001,6 +3005,7 @@
         }
       ],
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "@babel/runtime": "^7.29.2"
       },
@@ -3928,6 +3933,7 @@
         }
       ],
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "nanoid": "^3.3.11",
         "picocolors": "^1.1.1",
@@ -4179,6 +4185,7 @@
       "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
       "integrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "loose-envify": "^1.1.0"
       },
@@ -4878,6 +4885,7 @@
       "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.21.0.tgz",
       "integrity": "sha512-5C1sg4USs1lfG0GFb2RLXsdpXqBSEhAaA/0kPL01wxzpMqLILNxIxIOKiILz+cdg/pLnOUxFYOR5yhHU666wbw==",
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "esbuild": "~0.27.0",
         "get-tsconfig": "^4.7.5"
@@ -4917,6 +4925,7 @@
       "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
       "devOptional": true,
       "license": "Apache-2.0",
+      "peer": true,
       "bin": {
         "tsc": "bin/tsc",
         "tsserver": "bin/tsserver"
@@ -5028,6 +5037,7 @@
       "resolved": "https://registry.npmjs.org/vite/-/vite-7.3.1.tgz",
       "integrity": "sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==",
       "license": "MIT",
+      "peer": true,
       "dependencies": {
         "esbuild": "^0.27.0",
         "fdir": "^6.5.0",

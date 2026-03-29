@@ -11418,14 +11418,6 @@
     "productType": "TSHIRT",
     "color": "Белый",
     "size": "M",
-    "quantity": 1
-  },
-  {
-    "id": "1774459622035",
-    "productType": "TSHIRT",
-    "color": "Оранжевый",
-    "size": "XL",
-    "quantity": 1,
-    "sleeve": "Длинный"
+    "quantity": 0
   }
 ]
